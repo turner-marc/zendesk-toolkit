@@ -1,0 +1,80 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "zendesk-toolkit"
+version = "0.1.0"
+description = "A lightweight Python client for the Zendesk Support and Help Center APIs with retries, cursor/offset pagination, and broad endpoint coverage."
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [
+    {name = "Marc Turner", email = "marcturner999@gmail.com"},
+]
+keywords = ["zendesk", "api", "client", "support", "help-center", "tickets"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Intended Audience :: System Administrators",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Communications",
+    "Topic :: Office/Business :: Customer Service",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "requests>=2.32,<3",
+]
+
+[project.urls]
+Homepage = "https://github.com/turner-marc/zendesk-toolkit"
+Repository = "https://github.com/turner-marc/zendesk-toolkit"
+Issues = "https://github.com/turner-marc/zendesk-toolkit/issues"
+Changelog = "https://github.com/turner-marc/zendesk-toolkit/blob/main/CHANGELOG.md"
+
+[dependency-groups]
+dev = [
+    "pytest>=8",
+    "responses>=0.25",
+    "ruff>=0.6",
+    "mypy>=1.10",
+    "types-requests",
+    "pre-commit>=3.7",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["zendesk_toolkit"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra --strict-markers"
+
+[tool.ruff]
+line-length = 110
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+ignore = [
+    "E501",
+    "UP007",
+    "UP045",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["B011"]
+"examples/*" = ["F401"]
+
+[tool.mypy]
+python_version = "3.11"
+strict_optional = true
+warn_unused_ignores = true
+warn_redundant_casts = true
+disallow_untyped_defs = false
+ignore_missing_imports = true
+files = ["zendesk_toolkit"]
