@@ -1,0 +1,118 @@
+name: Publish
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  test:
+    name: Test before publish
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync
+
+      - name: Lint
+        run: |
+          uv run ruff check .
+          uv run ruff format --check .
+
+      - name: Type check
+        run: uv run mypy
+
+      - name: Test
+        run: uv run pytest -q
+
+  build:
+    name: Build distribution
+    runs-on: ubuntu-latest
+    needs: test
+    outputs:
+      is_prerelease: ${{ steps.classify.outputs.is_prerelease }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Verify tag matches pyproject version
+        run: |
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          PYPROJECT_VERSION="$(uv run --no-project python -c 'import tomllib; print(tomllib.load(open("pyproject.toml","rb"))["project"]["version"])')"
+          if [ "$TAG_VERSION" != "$PYPROJECT_VERSION" ]; then
+            echo "::error::Tag v$TAG_VERSION does not match pyproject.toml version $PYPROJECT_VERSION"
+            exit 1
+          fi
+
+      - name: Classify release vs pre-release
+        id: classify
+        run: |
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          # PEP 440: a final release is digits-and-dots only (e.g. 0.1.0, 1.2.3.4).
+          # Anything with a/b/rc/dev/post or hyphenated suffix is a pre-release for our purposes.
+          if [[ "$TAG_VERSION" =~ ^[0-9]+(\.[0-9]+)*$ ]]; then
+            echo "is_prerelease=false" >> "$GITHUB_OUTPUT"
+            echo "Tag $GITHUB_REF_NAME is a final release -> PyPI"
+          else
+            echo "is_prerelease=true" >> "$GITHUB_OUTPUT"
+            echo "Tag $GITHUB_REF_NAME is a pre-release -> TestPyPI"
+          fi
+
+      - name: Build sdist + wheel
+        run: uv build
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+  publish-testpypi:
+    name: Publish to TestPyPI
+    runs-on: ubuntu-latest
+    needs: build
+    if: needs.build.outputs.is_prerelease == 'true'
+    environment:
+      name: testpypi
+      url: https://test.pypi.org/p/zendesk-toolkit
+    permissions:
+      id-token: write
+    steps:
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+      - name: Publish to TestPyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository-url: https://test.pypi.org/legacy/
+
+  publish-pypi:
+    name: Publish to PyPI
+    runs-on: ubuntu-latest
+    needs: build
+    if: needs.build.outputs.is_prerelease == 'false'
+    environment:
+      name: pypi
+      url: https://pypi.org/p/zendesk-toolkit
+    permissions:
+      id-token: write
+    steps:
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1

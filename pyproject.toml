@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "zendesk-toolkit"
-version = "0.1.0"
+version = "0.2.0"
 description = "A lightweight Python client for the Zendesk Support and Help Center APIs with retries, cursor/offset pagination, and broad endpoint coverage."
 readme = "README.md"
 requires-python = ">=3.11"
@@ -24,11 +24,10 @@ classifiers = [
     "Programming Language :: Python :: 3.13",
     "Topic :: Software Development :: Libraries :: Python Modules",
     "Topic :: Communications",
-    "Topic :: Office/Business :: Customer Service",
     "Operating System :: OS Independent",
 ]
 dependencies = [
-    "requests>=2.32,<3",
+    "requests>=2.32",
 ]
 
 [project.urls]
